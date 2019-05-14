@@ -20,25 +20,30 @@ class ColorTransfer
 public:
 	static int cov(const Eigen::MatrixXd &m, Eigen::MatrixXd &dst);
 	//Also turns 255 into 1.0f
-	static int reshape_CV8UC3(const cv::Mat &src, Eigen::MatrixXd &dst);
+	static int reshape_CV8UC3(const cv::Mat &src, const cv::Mat &mask, Eigen::MatrixXd &dst);
 	static int reshape_MatrixXd(const Eigen::MatrixXd &src, cv::Mat &dst, int width, int height);
 	static int matlab_eig(const Eigen::MatrixXd &src, Eigen::MatrixXd &vec, Eigen::MatrixXd &val);
 	static int MKL(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B, Eigen::MatrixXd &T);
 };
 
 
-int ColorTransferInterface::MKL_transfer(cv::Mat & src, const cv::Mat & target, glm::mat4 &color_correct, glm::vec4 &color_append, bool resize_mat)
+int ColorTransferInterface::MKL_transfer(cv::Mat & src, const cv::Mat & target,
+	glm::mat4 &color_correct, glm::vec4 &color_append,
+	cv::Mat mask, bool resize_mat)
 {
 	cv::Mat _src = src.clone();
 	cv::Mat _target = target.clone();
+	cv::Mat _mask = mask.clone();
 	if (resize_mat)
 	{
-		cv::resize(_src, _src, cv::Size(MKL_SAMPLED_WIDTH, MKL_SAMPLED_HEIGHT));
-		cv::resize(_target, _target, cv::Size(MKL_SAMPLED_WIDTH, MKL_SAMPLED_HEIGHT));
+		cv::resize(_src, _src, cv::Size(), MKL_SAMPLED_RATIO, MKL_SAMPLED_RATIO);
+		cv::resize(_target, _target, _src.size());
+		if(!_mask.empty())
+			cv::resize(_mask, _mask, _src.size());
 	}
 	Eigen::MatrixXd X0, X1;
-	ColorTransfer::reshape_CV8UC3(_src, X0);
-	ColorTransfer::reshape_CV8UC3(_target, X1);
+	ColorTransfer::reshape_CV8UC3(_src, _mask, X0);
+	ColorTransfer::reshape_CV8UC3(_target, _mask, X1);
 
 	Eigen::MatrixXd A, B, T;
 	ColorTransfer::cov(X0, A);
@@ -80,18 +85,25 @@ int ColorTransfer::cov(const Eigen::MatrixXd &m, Eigen::MatrixXd &dst)
 	return 0;
 }
 
-int ColorTransfer::reshape_CV8UC3(const cv::Mat & src, Eigen::MatrixXd & dst)
+int ColorTransfer::reshape_CV8UC3(const cv::Mat & src,const cv::Mat &mask, Eigen::MatrixXd & dst)
 {
 	cv::Mat _src = src;
 	if (src.isContinuous() == false)
 		_src = src.clone();
-	Eigen::MatrixXd _dst(_src.cols*_src.rows, 3);
+	int dstSize = _src.cols*_src.rows;
+	if (!mask.empty())
+		dstSize = cv::countNonZero(mask);
+	Eigen::MatrixXd _dst(dstSize, 3);
 	
-	for (int i = 0; i < _src.cols*_src.rows; i++)
+	for (int i = 0, _dstIdx = 0; i < _src.cols*_src.rows; i++)
 	{
-		_dst(i, 0) = src.at<cv::Vec3b>(i)[0] / 255.0;
-		_dst(i, 1) = src.at<cv::Vec3b>(i)[1] / 255.0;
-		_dst(i, 2) = src.at<cv::Vec3b>(i)[2] / 255.0;
+		if (mask.empty() || mask.at<unsigned char>(i) > 0)
+		{
+			_dst(_dstIdx, 0) = src.at<cv::Vec3b>(i)[0] / 255.0;
+			_dst(_dstIdx, 1) = src.at<cv::Vec3b>(i)[1] / 255.0;
+			_dst(_dstIdx, 2) = src.at<cv::Vec3b>(i)[2] / 255.0;
+			_dstIdx++;
+		}
 	}
 	dst = _dst;
 	//std::cout << dst <<std::endl;

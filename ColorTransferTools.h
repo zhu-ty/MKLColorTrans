@@ -20,8 +20,8 @@ Color Transfer Static Class
 #include <glm/glm.hpp>
 
 //#define MODIFY_SRC
-#define MKL_SAMPLED_WIDTH 400
-#define MKL_SAMPLED_HEIGHT 300
+
+#define MKL_SAMPLED_RATIO 0.1
 
 //Eigen : Col first order!
 class ColorTransferInterface
@@ -35,10 +35,14 @@ public:
 	@param const cv::Mat &target: target "color" image
 	@param glm::mat4 &color_correct: mat4 color correction matrix for OpenGL
 	@param glm::vec4 &color_append: vec4 color append for OpenGL
-	@param  bool resize_mat: (defalt:true) resize mat to SAMPLED_WIDTH*SAMPLED_HEIGHT
+	@param cv::Mat mask: if it's not empty, the masked area (mask == 255) will be used to compute mkl
+	@param bool resize_mat: (defalt:true) resize mat to MKL_SAMPLED_RATIO
 	@return int(0)
 	*/
-	static int MKL_transfer(cv::Mat &src, const cv::Mat &target, glm::mat4 &color_correct, glm::vec4 &color_append, bool resize_mat = true);
+	static int MKL_transfer(cv::Mat &src, const cv::Mat &target,
+		glm::mat4 &color_correct, glm::vec4 &color_append,
+		cv::Mat mask = cv::Mat(),
+		bool resize_mat = true);
 };
 
 #endif //!__PANO_RANDER_COLOR_TRANSFER_TOOLS__

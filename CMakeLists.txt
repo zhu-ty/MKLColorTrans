@@ -101,6 +101,7 @@ cuda_add_executable(${name}
 target_link_libraries(${name}
 	${OpenCV_LIBS}
 	${CUDA_LIBRARY}
+	${CUDA_npp_LIBRARY}
 	cuda
 )
 

@@ -1,0 +1,16 @@
+.vscode
+build/
+*.asv
+*.jpg
+*.png
+*.obj
+*.mtl
+*.exe
+*.rar
+*.zip
+*Single*.txt
+
+!depth_apple.png
+!apple_5_4_220.png
+
+*__ignore__*

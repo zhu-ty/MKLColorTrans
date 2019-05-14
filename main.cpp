@@ -100,7 +100,27 @@ int main(int argc, char* argv[])
 			if (SKCommon::getFileExtention(srcName) == "mp4" ||
 				SKCommon::getFileExtention(srcName) == "avi")
 			{
-
+				cv::VideoCapture v(srcName);
+				int frame = v.get(cv::CAP_PROP_FRAME_COUNT);
+				std::vector<cv::Mat> videoData(frame);
+				for (int i = 0; i < frame; i++)
+				{
+					if (i % (frame / 10) == 0 && i != 0)
+						SKCommon::infoOutput("Read Video %d%% percent.", i / (frame / 10) * 10);
+					v >> videoData[i];
+					cv::cvtColor(videoData[i], videoData[i], cv::COLOR_BGR2RGB);
+					applyRGB(videoData[i], cor, apr);
+					cv::cvtColor(videoData[i], videoData[i], cv::COLOR_RGB2RGBA);
+				}
+				v.release();
+				SKEncoder enc;
+				enc.init(frame, videoData[0].size(), srcName + ".cor.h265", SKEncoder::FrameType::ABGR);
+				for (int i = 0; i < frame; i++)
+				{
+					cv::cuda::GpuMat tmp(videoData[i]);
+					enc.encode(tmp.data, tmp.step);
+				}
+				enc.endEncode();
 			}
 			else
 			{

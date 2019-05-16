@@ -57,11 +57,18 @@ int main(int argc, char* argv[])
 	std::sort(mode.begin(), mode.end());
 	std::reverse(mode.begin(), mode.end());
 	std::string srcName(argv[2]);
+	if(mode.length() > 2)
+	{
+		printUsage();
+		return 0;
+	}
 	for (int mi = 0; mi < mode.length(); mi++)
 	{
 		char modei = mode[mi];
 		if (modei == 'c')
 		{
+			if (argc < 3)
+				return -1;
 			cv::Mat msk;
 			std::string tarName(argv[3]);
 			if (argc > 4)
@@ -102,24 +109,24 @@ int main(int argc, char* argv[])
 			{
 				cv::VideoCapture v(srcName);
 				int frame = v.get(cv::CAP_PROP_FRAME_COUNT);
-				std::vector<cv::Mat> videoData(frame);
+				//std::vector<cv::Mat> videoData(frame);
+				cv::Mat vData;
+				SKEncoder enc;
+				
 				for (int i = 0; i < frame; i++)
 				{
 					if (i % (frame / 10) == 0 && i != 0)
 						SKCommon::infoOutput("Read Video %d%% percent.", i / (frame / 10) * 10);
-					v >> videoData[i];
-					cv::cvtColor(videoData[i], videoData[i], cv::COLOR_BGR2RGB);
-					applyRGB(videoData[i], cor, apr);
-					cv::cvtColor(videoData[i], videoData[i], cv::COLOR_RGB2RGBA);
-				}
-				v.release();
-				SKEncoder enc;
-				enc.init(frame, videoData[0].size(), srcName + ".cor.h265", SKEncoder::FrameType::ABGR);
-				for (int i = 0; i < frame; i++)
-				{
-					cv::cuda::GpuMat tmp(videoData[i]);
+					v >> vData;
+					if(i == 0)
+						enc.init(frame, vData.size(), srcName + ".cor.h265", SKEncoder::FrameType::ABGR);
+					cv::cvtColor(vData, vData, cv::COLOR_BGR2RGB);
+					applyRGB(vData, cor, apr);
+					cv::cvtColor(vData, vData, cv::COLOR_RGB2RGBA);
+					cv::cuda::GpuMat tmp(vData);
 					enc.encode(tmp.data, tmp.step);
 				}
+				v.release();
 				enc.endEncode();
 			}
 			else

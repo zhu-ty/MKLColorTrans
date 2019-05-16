@@ -4,6 +4,7 @@
 #include "ColorTransferTools.h"
 #include <npp.h>
 #include <nppi.h>
+#include "version.h"
 
 void printUsage()
 {
@@ -48,6 +49,7 @@ int applyRGB(cv::Mat & color_RGB, glm::mat4 c_mat_RGB, glm::vec4 c_vec_RGB)
 
 int main(int argc, char* argv[])
 {
+	SKCommon::infoOutput("Version = %d.%d.%s", __MAJOR_VERSION__, __MINOR_VERSION__, __GIT_VERSION__);
 	if (argc < 2)
 	{
 		printUsage();

@@ -105,9 +105,43 @@ target_link_libraries(${name}
 	cuda
 )
 
+SET(MAJOR_VERSION "1")
+SET(MINOR_VERSION "0")
+add_definitions( -D__MAJOR_VERSION__=${MAJOR_VERSION})
+add_definitions( -D__MINOR_VERSION__=${MINOR_VERSION})
 
+FILE(WRITE ${CMAKE_BINARY_DIR}/version.h.in
+"\#define __GIT_VERSION__ \"@VERSION@\"\n"
+)
+IF(EXISTS ${PROJECT_SOURCE_DIR}/.git)
+FILE(WRITE ${CMAKE_BINARY_DIR}/version.cmake
+"EXECUTE_PROCESS(
+     COMMAND git log -1 --format=%ad --date=format:%y%m%d.%H%M%S
+     OUTPUT_VARIABLE VERSION
+     OUTPUT_STRIP_TRAILING_WHITESPACE
+ )
+ CONFIGURE_FILE(\${SRC} \${DST} @ONLY)
+")
+ELSE()
+FILE(WRITE ${CMAKE_BINARY_DIR}/version.cmake
+"EXECUTE_PROCESS(
+     COMMAND echo unknown
+     OUTPUT_VARIABLE VERSION
+     OUTPUT_STRIP_TRAILING_WHITESPACE
+ )
+ CONFIGURE_FILE(\${SRC} \${DST} @ONLY)
+")
+ENDIF()
+INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
+#ADD_EXECUTABLE(main main.c)
+ADD_CUSTOM_TARGET(
+    version
+    ${CMAKE_COMMAND} -D SRC=${CMAKE_BINARY_DIR}/version.h.in
+                     -D DST=${CMAKE_BINARY_DIR}/version.h
+                     -P ${CMAKE_BINARY_DIR}/version.cmake
+)
 
-
+ADD_DEPENDENCIES(${name} version)
 
 
 
